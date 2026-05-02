@@ -1,5 +1,5 @@
 function formatCurrency(amount) {
-  return '$' + parseFloat(amount).toFixed(2);
+  return '₹' + parseFloat(amount).toFixed(2);
 }
 
 function formatDate(dateStr) {
@@ -35,9 +35,9 @@ function sortExpenses(expenses, sortBy) {
 }
 
 function exportToCSV(expenses) {
-  if (expenses.length === 0) return alert('No expenses to export.');
-  const header = 'Description,Amount,Category,Date';
-  const rows = expenses.map(e => `"${e.description}",${e.amount},${e.category},${e.date}`);
+  if (expenses.length === 0) return showToast('No expenses to export.', 'error');
+  const header = 'Description,Amount,Category,Date,Note';
+  const rows = expenses.map(e => `"${e.description}",${e.amount},${e.category},${e.date},"${e.note || ''}"`);
   const csv = [header, ...rows].join('\n');
   const blob = new Blob([csv], { type: 'text/csv' });
   const url = URL.createObjectURL(blob);
@@ -46,4 +46,14 @@ function exportToCSV(expenses) {
   a.download = 'expenses.csv';
   a.click();
   URL.revokeObjectURL(url);
+  showToast('Exported successfully!', 'success');
+}
+
+let toastTimer;
+function showToast(message, type = 'success') {
+  const toast = document.getElementById('toast');
+  toast.textContent = message;
+  toast.className = `toast show ${type}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { toast.className = 'toast'; }, 3000);
 }
