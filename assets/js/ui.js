@@ -16,6 +16,7 @@ function renderExpenses(expenses) {
       </div>
       <div class="expense-right">
         <span class="expense-amount">${formatCurrency(e.amount)}</span>
+        <button class="edit-btn" data-id="${e.id}">✏️</button>
         <button class="delete-btn" data-id="${e.id}">✕</button>
       </div>
     `;
@@ -40,8 +41,34 @@ function renderBreakdown(expenses) {
   });
 }
 
+function renderBudget(expenses) {
+  const budget = getBudget();
+  const total = calcTotal(expenses);
+  const left = budget - total;
+  const budgetLeft = document.getElementById('budgetLeft');
+  const budgetBarWrap = document.getElementById('budgetBarWrap');
+  const budgetBarFill = document.getElementById('budgetBarFill');
+  const budgetWarning = document.getElementById('budgetWarning');
+
+  if (!budget) {
+    budgetLeft.textContent = '—';
+    budgetBarWrap.style.display = 'none';
+    return;
+  }
+
+  budgetLeft.textContent = formatCurrency(left);
+  budgetLeft.className = left < 0 ? 'over' : '';
+  budgetBarWrap.style.display = 'flex';
+
+  const pct = Math.min((total / budget) * 100, 100);
+  budgetBarFill.style.width = pct + '%';
+  budgetBarFill.className = 'budget-bar-fill' + (pct >= 100 ? ' over' : pct >= 80 ? ' warning' : '');
+  budgetWarning.textContent = pct >= 100 ? '⚠️ You have exceeded your budget!' : pct >= 80 ? '⚠️ You are close to your budget limit.' : '';
+}
+
 function render(expenses) {
   renderExpenses(expenses);
   renderSummary(expenses);
   renderBreakdown(expenses);
+  renderBudget(getExpenses()); // always use full expenses for budget
 }
