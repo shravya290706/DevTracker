@@ -22,3 +22,28 @@ function calcByCategory(expenses) {
     return acc;
   }, {});
 }
+
+function sortExpenses(expenses, sortBy) {
+  const sorted = [...expenses];
+  switch (sortBy) {
+    case 'date-asc':    return sorted.sort((a, b) => a.date.localeCompare(b.date));
+    case 'date-desc':   return sorted.sort((a, b) => b.date.localeCompare(a.date));
+    case 'amount-asc':  return sorted.sort((a, b) => parseFloat(a.amount) - parseFloat(b.amount));
+    case 'amount-desc': return sorted.sort((a, b) => parseFloat(b.amount) - parseFloat(a.amount));
+    default:            return sorted;
+  }
+}
+
+function exportToCSV(expenses) {
+  if (expenses.length === 0) return alert('No expenses to export.');
+  const header = 'Description,Amount,Category,Date';
+  const rows = expenses.map(e => `"${e.description}",${e.amount},${e.category},${e.date}`);
+  const csv = [header, ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'expenses.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
