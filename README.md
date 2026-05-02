@@ -27,4 +27,4 @@ expense-tracker/
 ```
 
 ## Live Demo
-[View on GitHub Pages](#) <!-- update this link after deploying -->
+[View Live App](https://dev-tracker-amber.vercel.app/login.html)
