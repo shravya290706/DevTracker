@@ -1,11 +1,29 @@
+import { getExpenses, addExpense, deleteExpense, updateExpense, getBudget, saveBudget, getUser } from './storage.js';
+import { supabase } from './supabase.js';
+import { formatCurrency, formatDate, generateId, calcTotal, calcByCategory, sortExpenses, exportToCSV, showToast } from './utils.js';
+import { render } from './ui.js';
+
 let editingId = null;
 
-function getFilteredAndSorted() {
-  const category = document.getElementById('filterCategory').value;
-  const month = document.getElementById('filterMonth').value;
-  const sortBy = document.getElementById('sortBy').value;
-  const search = document.getElementById('searchInput').value.trim().toLowerCase();
-  let expenses = getExpenses();
+// Auth guard — redirect to login if not logged in
+const user = await getUser();
+if (!user) window.location.href = 'login.html';
+
+// Show user email
+document.getElementById('userEmail').textContent = user.email;
+
+function getFilters() {
+  return {
+    category: document.getElementById('filterCategory').value,
+    month: document.getElementById('filterMonth').value,
+    sortBy: document.getElementById('sortBy').value,
+    search: document.getElementById('searchInput').value.trim().toLowerCase()
+  };
+}
+
+async function getFilteredAndSorted() {
+  const { category, month, sortBy, search } = getFilters();
+  let expenses = await getExpenses();
 
   if (category !== 'All') expenses = expenses.filter(e => e.category === category);
   if (month) expenses = expenses.filter(e => e.date && e.date.startsWith(month));
@@ -14,12 +32,14 @@ function getFilteredAndSorted() {
   return sortExpenses(expenses, sortBy);
 }
 
-function refreshUI() {
-  render(getFilteredAndSorted(), getExpenses());
+async function refreshUI() {
+  const all = await getExpenses();
+  const filtered = await getFilteredAndSorted();
+  render(filtered, all, getBudget);
 }
 
 // Add expense
-function handleAdd() {
+async function handleAdd() {
   const desc = document.getElementById('descInput').value.trim();
   const amount = document.getElementById('amountInput').value.trim();
   const category = document.getElementById('categoryInput').value;
@@ -31,7 +51,7 @@ function handleAdd() {
     return;
   }
 
-  addExpense({ id: generateId(), description: desc, amount, category, date, note });
+  await addExpense({ description: desc, amount, category, date, note });
 
   document.getElementById('descInput').value = '';
   document.getElementById('amountInput').value = '';
@@ -39,26 +59,23 @@ function handleAdd() {
   document.getElementById('dateInput').value = '';
 
   showToast('Expense added!', 'success');
-  refreshUI();
+  await refreshUI();
 }
 
 document.getElementById('addBtn').addEventListener('click', handleAdd);
-
-// Press Enter to add
-document.getElementById('amountInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') handleAdd();
-});
+document.getElementById('amountInput').addEventListener('keydown', e => { if (e.key === 'Enter') handleAdd(); });
 
 // Delete & Edit
-document.getElementById('expenseList').addEventListener('click', (e) => {
+document.getElementById('expenseList').addEventListener('click', async (e) => {
   if (e.target.classList.contains('delete-btn')) {
-    deleteExpense(e.target.dataset.id);
+    await deleteExpense(e.target.dataset.id);
     showToast('Expense deleted.', 'error');
-    refreshUI();
+    await refreshUI();
   }
 
   if (e.target.classList.contains('edit-btn')) {
-    const expense = getExpenses().find(ex => ex.id === e.target.dataset.id);
+    const all = await getExpenses();
+    const expense = all.find(ex => ex.id === e.target.dataset.id);
     if (!expense) return;
     editingId = expense.id;
     document.getElementById('editDesc').value = expense.description;
@@ -71,7 +88,7 @@ document.getElementById('expenseList').addEventListener('click', (e) => {
 });
 
 // Save edit
-document.getElementById('saveEditBtn').addEventListener('click', () => {
+document.getElementById('saveEditBtn').addEventListener('click', async () => {
   const desc = document.getElementById('editDesc').value.trim();
   const amount = document.getElementById('editAmount').value.trim();
   const category = document.getElementById('editCategory').value;
@@ -83,11 +100,11 @@ document.getElementById('saveEditBtn').addEventListener('click', () => {
     return;
   }
 
-  updateExpense(editingId, { description: desc, amount, category, date, note });
+  await updateExpense(editingId, { description: desc, amount, category, date, note });
   document.getElementById('modalOverlay').classList.remove('active');
   editingId = null;
   showToast('Expense updated!', 'success');
-  refreshUI();
+  await refreshUI();
 });
 
 document.getElementById('cancelEditBtn').addEventListener('click', () => {
@@ -96,7 +113,7 @@ document.getElementById('cancelEditBtn').addEventListener('click', () => {
 });
 
 // Set budget
-document.getElementById('setBudgetBtn').addEventListener('click', () => {
+document.getElementById('setBudgetBtn').addEventListener('click', async () => {
   const val = document.getElementById('budgetInput').value.trim();
   if (!val || isNaN(val) || parseFloat(val) <= 0) {
     showToast('Please enter a valid budget amount.', 'error');
@@ -105,10 +122,10 @@ document.getElementById('setBudgetBtn').addEventListener('click', () => {
   saveBudget(parseFloat(val));
   document.getElementById('budgetInput').value = '';
   showToast('Budget set!', 'success');
-  refreshUI();
+  await refreshUI();
 });
 
-// Filters & sort & search
+// Filters
 document.getElementById('filterCategory').addEventListener('change', refreshUI);
 document.getElementById('filterMonth').addEventListener('change', refreshUI);
 document.getElementById('sortBy').addEventListener('change', refreshUI);
@@ -122,9 +139,9 @@ document.getElementById('clearFilter').addEventListener('click', () => {
   refreshUI();
 });
 
-// Export CSV
-document.getElementById('exportBtn').addEventListener('click', () => {
-  exportToCSV(getFilteredAndSorted());
+// Export
+document.getElementById('exportBtn').addEventListener('click', async () => {
+  exportToCSV(await getFilteredAndSorted());
 });
 
 // Dark mode
@@ -141,5 +158,11 @@ themeToggle.addEventListener('click', () => {
   themeToggle.textContent = next === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
 });
 
+// Logout
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  await supabase.auth.signOut();
+  window.location.href = 'login.html';
+});
+
 // Initial load
-refreshUI();
+await refreshUI();
