@@ -1,4 +1,6 @@
-function renderExpenses(expenses) {
+import { formatCurrency, formatDate, calcTotal, calcByCategory } from './utils.js';
+
+export function renderExpenses(expenses) {
   const list = document.getElementById('expenseList');
   list.innerHTML = '';
 
@@ -28,12 +30,12 @@ function renderExpenses(expenses) {
   });
 }
 
-function renderSummary(expenses) {
+export function renderSummary(expenses) {
   document.getElementById('totalAmount').textContent = formatCurrency(calcTotal(expenses));
   document.getElementById('totalCount').textContent = expenses.length;
 }
 
-function renderChart(expenses) {
+export function renderChart(expenses) {
   const chart = document.getElementById('chart');
   chart.innerHTML = '';
   const byCategory = calcByCategory(expenses);
@@ -61,7 +63,7 @@ function renderChart(expenses) {
     });
 }
 
-function renderBudget(expenses) {
+export function renderBudget(expenses, getBudget) {
   const budget = getBudget();
   const total = calcTotal(expenses);
   const left = budget - total;
@@ -85,9 +87,9 @@ function renderBudget(expenses) {
   budgetWarning.textContent = pct >= 100 ? '⚠️ You have exceeded your budget!' : pct >= 80 ? '⚠️ You are close to your budget limit.' : '';
 }
 
-function render(filtered, all) {
+export function render(filtered, all, getBudget) {
   renderExpenses(filtered);
   renderSummary(filtered);
   renderChart(all);
-  renderBudget(all);
+  renderBudget(all, getBudget);
 }

@@ -1,40 +1,40 @@
-function formatCurrency(amount) {
+export function formatCurrency(amount) {
   return '₹' + parseFloat(amount).toFixed(2);
 }
 
-function formatDate(dateStr) {
+export function formatDate(dateStr) {
   if (!dateStr) return '';
   const [year, month, day] = dateStr.split('-');
   return `${day}/${month}/${year}`;
 }
 
-function generateId() {
+export function generateId() {
   return Date.now().toString();
 }
 
-function calcTotal(expenses) {
+export function calcTotal(expenses) {
   return expenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
 }
 
-function calcByCategory(expenses) {
+export function calcByCategory(expenses) {
   return expenses.reduce((acc, e) => {
     acc[e.category] = (acc[e.category] || 0) + parseFloat(e.amount);
     return acc;
   }, {});
 }
 
-function sortExpenses(expenses, sortBy) {
+export function sortExpenses(expenses, sortBy) {
   const sorted = [...expenses];
   switch (sortBy) {
-    case 'date-asc':    return sorted.sort((a, b) => a.date.localeCompare(b.date));
-    case 'date-desc':   return sorted.sort((a, b) => b.date.localeCompare(a.date));
+    case 'date-asc':    return sorted.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+    case 'date-desc':   return sorted.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
     case 'amount-asc':  return sorted.sort((a, b) => parseFloat(a.amount) - parseFloat(b.amount));
     case 'amount-desc': return sorted.sort((a, b) => parseFloat(b.amount) - parseFloat(a.amount));
     default:            return sorted;
   }
 }
 
-function exportToCSV(expenses) {
+export function exportToCSV(expenses) {
   if (expenses.length === 0) return showToast('No expenses to export.', 'error');
   const header = 'Description,Amount,Category,Date,Note';
   const rows = expenses.map(e => `"${e.description}",${e.amount},${e.category},${e.date},"${e.note || ''}"`);
@@ -50,7 +50,7 @@ function exportToCSV(expenses) {
 }
 
 let toastTimer;
-function showToast(message, type = 'success') {
+export function showToast(message, type = 'success') {
   const toast = document.getElementById('toast');
   toast.textContent = message;
   toast.className = `toast show ${type}`;

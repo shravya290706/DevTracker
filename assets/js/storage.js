@@ -1,26 +1,53 @@
-const STORAGE_KEY = 'expense_tracker_data';
+import { supabase } from './supabase.js';
+
 const BUDGET_KEY = 'expense_tracker_budget';
 
-function getExpenses() {
-  return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+// Get current logged in user
+async function getUser() {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.user || null;
 }
 
-function saveExpenses(expenses) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
+async function getExpenses() {
+  const user = await getUser();
+  if (!user) return [];
+  const { data, error } = await supabase
+    .from('expenses')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('date', { ascending: false });
+  if (error) { console.error(error); return []; }
+  return data;
 }
 
-function addExpense(expense) {
-  const expenses = getExpenses();
-  expenses.push(expense);
-  saveExpenses(expenses);
+async function addExpense(expense) {
+  const user = await getUser();
+  if (!user) return;
+  const { error } = await supabase.from('expenses').insert({
+    user_id: user.id,
+    description: expense.description,
+    amount: expense.amount,
+    category: expense.category,
+    date: expense.date,
+    note: expense.note || ''
+  });
+  if (error) console.error(error);
 }
 
-function deleteExpense(id) {
-  saveExpenses(getExpenses().filter(e => e.id !== id));
+async function deleteExpense(id) {
+  const { error } = await supabase.from('expenses').delete().eq('id', id);
+  if (error) console.error(error);
 }
 
-function updateExpense(id, updated) {
-  saveExpenses(getExpenses().map(e => e.id === id ? { ...e, ...updated } : e));
+async function updateExpense(id, updated) {
+  const { error } = await supabase.from('expenses').update({
+    description: updated.description,
+    amount: updated.amount,
+    category: updated.category,
+    date: updated.date,
+    note: updated.note || ''
+  }).eq('id', id);
+  if (error) console.error(error);
 }
 
 function getBudget() {
@@ -30,3 +57,5 @@ function getBudget() {
 function saveBudget(amount) {
   localStorage.setItem(BUDGET_KEY, amount);
 }
+
+export { getExpenses, addExpense, deleteExpense, updateExpense, getBudget, saveBudget, getUser };
